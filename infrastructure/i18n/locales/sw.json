@@ -1,0 +1,58 @@
+{
+  "home": {
+    "title": "Nyumbani",
+    "news_section": "Habari za Hivi Punde",
+    "see_all": "Angalia Habari Zote"
+  },
+  "news": {
+    "title": "Habari za Hivi Punde",
+    "search_placeholder": "Tafuta habari",
+    "no_articles": "Hakuna makala ya habari yaliyopatikana"
+  },
+  "welcome": {
+    "title": "Karibu kwenye ZaoApp",
+    "description": "Safari yako ya kilimo inaanza hapa",
+    "get_started": "Anza",
+    "summary": "ZaoApp ni mwenzako wa kilimo wa kila kitu, akikusaidia kuunganisha, kujifunza, kufanya biashara na kukua kwa maarifa ya wataalamu, usaidizi unaoendeshwa na AI, na jamii ya kilimo inayostawi."
+  },
+  "connect": {
+    "title": "Zao Connect – Panua Mtandao Wako, Shiriki Maarifa Yako!",
+    "summary": "Zao Connect ni nafasi yako ya kujitolea kuungana na wakulima wenzako, Biashara za kilimo na wataalamu, wakishiriki maarifa, uzoefu na mbinu bora."
+  },
+  "learn": {
+    "title": "Zao Learn – Panua Maarifa Yako, Jifunze Ustadi Mpya!",
+    "summary": "Fungua kozi zinazoongozwa na wataalamu na maarifa ya kilimo ya vitendo. Jifunze kuhusu usimamizi wa mazao, udhibiti wa wadudu, ustadi wa Biashara, na endelevu kupitia video za mwingiliano, maswali na majadiliano ya jamii."
+  },
+  "market": {
+    "title": "Zao Market – Nunua, Uza na Fanya Biashara kwa Urahisi!",
+    "summary": "Soko lako la kilimo la kila kitu. Vinjari na ununue vitu vya msingi vya kilimo kama mbegu, mbolea na vifaa, au uuze mazao yako na huduma kwa wanunuzi waliothibitishwa."
+  },
+  "insight": {
+    "title": "Zao Insight – Kilimo cha Akili, Maamuzi ya Akili Zaidi!",
+    "summary": "Pata maarifa ya kilimo ya wakati halisi kwenye vidole vyako. Fikia mapendekezo ya mazao yanayoendeshwa na AI, utabiri wa hali ya hewa na mwenendo wa bei za soko ili kuboresha maamuzi yako ya kilimo."
+  },
+  "ai": {
+    "title": "Zao AI – Msaidizi Wako wa Kilimo cha Akili!",
+    "summary": "Mwongozo unaoendeshwa na AI kwa kilimo bora. Tambua magonjwa ya mazao, pokea ushauri wa kibinafsi kuhusu umwagiliaji na urutubishaji, na upate maarifa ya soko ya wakati halisi."
+  },
+  "language": {
+    "title": "Chagua Lugha",
+    "subtitle": "Chagua lugha unayotaka kutumia kwenye ZaoApp",
+    "continue": "Endelea",
+    "select_language_error": "Lazima uchague lugha ili kuendelea"
+  },
+  "common": {
+    "skip": "Ruka",
+    "error": "Kosa",
+    "loading": "Inapakia...",
+    "retry": "Jaribu Tena"
+  },
+  "register": {
+    "title": "Fungua Akaunti",
+    "submit": "Jisajili"
+  },
+  "login": {
+    "title": "Ingia",
+    "submit": "Ingia"
+  }
+}

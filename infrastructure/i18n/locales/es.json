@@ -1,0 +1,58 @@
+{
+  "home": {
+    "title": "Inicio",
+    "news_section": "Últimas Noticias",
+    "see_all": "Ver Todas las Noticias"
+  },
+  "news": {
+    "title": "Últimas Noticias",
+    "search_placeholder": "Buscar noticias",
+    "no_articles": "No se encontraron artículos de noticias"
+  },
+  "welcome": {
+    "title": "Bienvenido a ZaoApp",
+    "description": "Tu viaje agrícola comienza aquí",
+    "get_started": "Empezar",
+    "summary": "ZaoApp es tu compañero agrícola todo en uno, que te ayuda a conectarte, aprender, comerciar y crecer con información experta, asistencia impulsada por IA y una comunidad agrícola próspera."
+  },
+  "connect": {
+    "title": "Zao Connect – ¡Amplía tu Red, Comparte tu Conocimiento!",
+    "summary": "Zao Connect es tu espacio dedicado para conectarte con otros agricultores, empresas agrícolas y expertos, compartiendo ideas, experiencias y mejores prácticas."
+  },
+  "learn": {
+    "title": "Zao Learn – ¡Amplía tu Conocimiento, Domina Nuevas Habilidades!",
+    "summary": "Desbloquea cursos dirigidos por expertos y conocimientos agrícolas prácticos. Aprende sobre manejo de cultivos, control de plagas, habilidades empresariales y sostenibilidad a través de videos interactivos, cuestionarios y discusiones comunitarias."
+  },
+  "market": {
+    "title": "Zao Market – ¡Compra, Vende y Comercia con Facilidad!",
+    "summary": "Tu mercado agrícola integral. Explora y compra productos esenciales como semillas, fertilizantes y equipos, o vende tus productos y servicios a compradores verificados."
+  },
+  "insight": {
+    "title": "Zao Insight – ¡Agricultura Inteligente, Decisiones Más Inteligentes!",
+    "summary": "Obtén inteligencia agrícola en tiempo real al alcance de tu mano. Accede a recomendaciones de cultivos impulsadas por IA, pronósticos del tiempo y tendencias de precios de mercado para optimizar tus decisiones agrícolas."
+  },
+  "ai": {
+    "title": "Zao AI – ¡Tu Asistente Agrícola Inteligente!",
+    "summary": "Guía impulsada por IA para una mejor agricultura. Diagnostica enfermedades de cultivos, recibe consejos personalizados sobre riego y fertilización, y obtén información de mercado en tiempo real."
+  },
+  "language": {
+    "title": "Seleccionar Idioma",
+    "subtitle": "Elige el idioma que deseas usar en ZaoApp",
+    "continue": "Continuar",
+    "select_language_error": "Debes elegir un idioma para continuar"
+  },
+  "common": {
+    "skip": "Omitir",
+    "error": "Error",
+    "loading": "Cargando...",
+    "retry": "Reintentar"
+  },
+  "register": {
+    "title": "Crear Cuenta",
+    "submit": "Registrar"
+  },
+  "login": {
+    "title": "Iniciar Sesión",
+    "submit": "Iniciar Sesión"
+  }
+}

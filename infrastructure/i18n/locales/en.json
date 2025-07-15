@@ -1,0 +1,59 @@
+{
+  "home": {
+    "title": "Home",
+    "news_section": "Latest News",
+    "see_all": "See All News"
+  },
+  "news": {
+    "title": "Latest News",
+    "search_placeholder": "Search news",
+    "no_articles": "No news articles found"
+  },
+
+  "welcome": {
+    "title": "Welcome to ZaoApp",
+    "description": "Your farming journey starts here",
+    "get_started": "Get Started",
+    "summary": "Zao App is your all-in-one farming companion, helping you connect, learn, trade, and grow with expert insights, AI-powered assistance, and a thriving agricultural community."
+  },
+  "connect": {
+    "title": "Zao Connect – Grow Your Network, Share Your Knowledge!",
+    "summary": "Zao Connect is your dedicated space to network with fellow farmers, agribusinesses, and experts, sharing insights, experiences, and best practices."
+  },
+  "learn": {
+    "title": "Zao Learn – Grow Your Knowledge, Master New Skills!",
+    "summary": "Unlock expert-led courses and practical farming knowledge. Learn about crop management, pest control, business skills, and sustainability through interactive videos, quizzes, and community discussions."
+  },
+  "market": {
+    "title": "Zao Market – Buy, Sell & Trade with Ease!",
+    "summary": "Your one-stop agricultural marketplace. Browse and purchase farm essentials like seeds, fertilizers, and equipment, or sell your produce and services to verified buyers."
+  },
+  "insight": {
+    "title": "Zao Insight – Smart Farming, Smarter Decisions!",
+    "summary": "Get real-time agricultural intelligence at your fingertips. Access AI-powered crop recommendations, weather forecasts, and market price trends to optimize your farming decisions."
+  },
+  "ai": {
+    "title": "Zao AI – Your Smart Farming Assistant!",
+    "summary": "AI-powered guidance for better farming. Diagnose crop diseases, receive tailored irrigation and fertilization advice, and get real-time market insights."
+  },
+  "language": {
+    "title": "Select Language",
+    "subtitle": "Choose the language you want to use in ZaoApp",
+    "continue": "Continue",
+    "select_language_error": "You must choose a language to continue"
+  },
+  "common": {
+    "skip": "Skip",
+    "error": "Error",
+    "loading": "Loading...",
+    "retry": "Retry"
+  },
+  "register": {
+    "title": "Create Account",
+    "submit": "Register"
+  },
+  "login": {
+    "title": "Sign In",
+    "submit": "Login"
+  }
+}

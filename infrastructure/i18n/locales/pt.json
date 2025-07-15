@@ -1,0 +1,58 @@
+{
+  "home": {
+    "title": "Início",
+    "news_section": "Últimas Notícias",
+    "see_all": "Ver Todas as Notícias"
+  },
+  "news": {
+    "title": "Últimas Notícias",
+    "search_placeholder": "Pesquisar notícias",
+    "no_articles": "Nenhum artigo de notícias encontrado"
+  },
+  "welcome": {
+    "title": "Bem-vindo ao ZaoApp",
+    "description": "Sua jornada agrícola começa aqui",
+    "get_started": "Começar",
+    "summary": "O ZaoApp é seu companheiro agrícola tudo-em-um, ajudando você a se conectar, aprender, negociar e crescer com insights de especialistas, assistência alimentada por IA e uma comunidade agrícola próspera."
+  },
+  "connect": {
+    "title": "Zao Connect – Amplie sua Rede, Compartilhe seu Conhecimento!",
+    "summary": "O Zao Connect é seu espaço dedicado para se conectar com outros agricultores, empresas agrícolas e especialistas, compartilhando ideias, experiências e melhores práticas."
+  },
+  "learn": {
+    "title": "Zao Learn – Amplie seu Conhecimento, Domine Novas Habilidades!",
+    "summary": "Acesse cursos liderados por especialistas e conhecimentos agrícolas práticos. Aprenda sobre manejo de culturas, controle de pragas, habilidades comerciais e sustentabilidade por meio de vídeos interativos, quizzes e discussões comunitárias."
+  },
+  "market": {
+    "title": "Zao Market – Compre, Venda e Negocie com Facilidade!",
+    "summary": "Seu mercado agrícola completo. Navegue e compre itens essenciais agrícolas como sementes, fertilizantes e equipamentos, ou venda seus produtos e serviços para compradores verificados."
+  },
+  "insight": {
+    "title": "Zao Insight – Agricultura Inteligente, Decisões Mais Inteligentes!",
+    "summary": "Obtenha inteligência agrícola em tempo real na palma da sua mão. Acesse recomendações de culturas alimentadas por IA, previsões do tempo e tendências de preços de mercado para otimizar suas decisões agrícolas."
+  },
+  "ai": {
+    "title": "Zao AI – Seu Assistente Agrícola Inteligente!",
+    "summary": "Orientação alimentada por IA para uma agricultura melhor. Diagnostique doenças de culturas, receba conselhos personalizados sobre irrigação e fertilização e obtenha insights de mercado em tempo real."
+  },
+  "language": {
+    "title": "Selecionar Idioma",
+    "subtitle": "Escolha o idioma que deseja usar no ZaoApp",
+    "continue": "Continuar",
+    "select_language_error": "Você deve escolher um idioma para continuar"
+  },
+  "common": {
+    "skip": "Pular",
+    "error": "Erro",
+    "loading": "Carregando...",
+    "retry": "Tentar Novamente"
+  },
+  "register": {
+    "title": "Criar Conta",
+    "submit": "Registrar"
+  },
+  "login": {
+    "title": "Entrar",
+    "submit": "Login"
+  }
+}

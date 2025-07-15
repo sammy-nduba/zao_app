@@ -1,0 +1,58 @@
+{
+  "home": {
+    "title": "Accueil",
+    "news_section": "Dernières Nouvelles",
+    "see_all": "Voir Toutes les Nouvelles"
+  },
+  "news": {
+    "title": "Dernières Nouvelles",
+    "search_placeholder": "Rechercher des nouvelles",
+    "no_articles": "Aucun article de nouvelles trouvé"
+  },
+  "welcome": {
+    "title": "Bienvenue sur ZaoApp",
+    "description": "Votre parcours agricole commence ici",
+    "get_started": "Commencer",
+    "summary": "ZaoApp est votre compagnon agricole tout-en-un, vous aidant à vous connecter, apprendre, échanger et croître grâce à des informations d'experts, une assistance alimentée par l'IA et une communauté agricole florissante."
+  },
+  "connect": {
+    "title": "Zao Connect – Développez votre réseau, partagez vos connaissances !",
+    "summary": "Zao Connect est votre espace dédié pour réseauter avec d'autres agriculteurs, des entreprises agroalimentaires et des experts, en partageant des idées, des expériences et des meilleures pratiques."
+  },
+  "learn": {
+    "title": "Zao Learn – Élargissez vos connaissances, maîtrisez de nouvelles compétences !",
+    "summary": "Accédez à des cours dirigés par des experts et à des connaissances agricoles pratiques. Apprenez la gestion des cultures, la lutte contre les nuisibles, les compétences commerciales et la durabilité grâce à des vidéos interactives, des quiz et des discussions communautaires."
+  },
+  "market": {
+    "title": "Zao Market – Achetez, Vendez et Échangez en Toute Simplicité !",
+    "summary": "Votre marché agricole tout-en-un. Parcourez et achetez des essentiels agricoles comme des semences, des engrais et des équipements, ou vendez vos produits et services à des acheteurs vérifiés."
+  },
+  "insight": {
+    "title": "Zao Insight – Agriculture Intelligente, Décisions Plus Intelligentes !",
+    "summary": "Obtenez des informations agricoles en temps réel à portée de main. Accédez à des recommandations de cultures alimentées par l'IA, des prévisions météorologiques et des tendances des prix du marché pour optimiser vos décisions agricoles."
+  },
+  "ai": {
+    "title": "Zao AI – Votre Assistant Agricole Intelligent !",
+    "summary": "Des conseils alimentés par l'IA pour une meilleure agriculture. Diagnostiquez les maladies des cultures, recevez des conseils personnalisés sur l'irrigation et la fertilisation, et obtenez des informations sur le marché en temps réel."
+  },
+  "language": {
+    "title": "Sélectionner la Langue",
+    "subtitle": "Choisissez la langue que vous souhaitez utiliser dans ZaoApp",
+    "continue": "Continuer",
+    "select_language_error": "Vous devez choisir une langue pour continuer"
+  },
+  "common": {
+    "skip": "Passer",
+    "error": "Erreur",
+    "loading": "Chargement...",
+    "retry": "Réessayer"
+  },
+  "register": {
+    "title": "Créer un Compte",
+    "submit": "S'inscrire"
+  },
+  "login": {
+    "title": "Se Connecter",
+    "submit": "Connexion"
+  }
+}
