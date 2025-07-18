@@ -1,161 +1,159 @@
-// In FarmDetails.js
-import React, { useState, useEffect, useContext } from 'react';
-import { View, StyleSheet, Image } from 'react-native';
-import { ScrollableMainContainer, FarmerTypeInput } from '../../../components';
-import StyledText from '../../../components/Texts/StyledText';
-import { colors } from '../../../config/theme';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ActivityIndicator } from 'react-native';
+import { useContainer } from '../../../utils/ContainerProvider';
+import ErrorBoundary from '../../../utils/ErrorBoundary';
+import { useAuth } from '../../../utils/AuthContext';
 import NewFarmerForm from './NewFarmerForm';
 import ExperiencedFarmerForm from './ExperiencedFarmerForm';
-import { FarmDetailsViewModel } from '../../../viewModel/FarmDetailsViewModel';
-import { AuthContext } from '../../../utils/AuthContext';
-import Toast from 'react-native-toast-message';
 
-const FarmDetails = ({ navigation }) => {
-  const { user, isVerified, setIsRegistrationComplete } = useContext(AuthContext);
-  const [viewModel] = useState(() => new FarmDetailsViewModel());
-  const [state, setState] = useState(viewModel.getState());
+function FarmDetails() {
+  const container = useContainer();
+  const authContext = useAuth();
+  
+  // Safe destructuring with defaults
+  const { 
+    authState = {}, 
+    setIsRegistrationComplete = () => console.warn('Auth context not ready') 
+  } = authContext || {};
+
+  const [state, setState] = useState({
+    farmerType: 'new',
+    formData: {
+      cropAge: '',
+      cropPhase: 'Vegetative, Fruit/seed development',
+      farmSize: '0-5 acres (Small Scale)',
+      farmerType: '',
+      fertilizer: '',
+      lastManure: '',
+      location: '',
+      selectedCrops: [],
+    },
+    isLoading: true,
+    isOffline: false,
+    error: null,
+  });
 
   useEffect(() => {
-    if (!user?.id || !isVerified) {
-      navigation.replace('Registration');
-      Toast.show({
-        type: 'error',
-        text1: 'Authentication Required',
-        text2: 'Please complete registration and verify your email.',
-      });
+    console.log('FarmDetails: Component mounted');
+    
+    if (!authState.user?.id) {
+      console.error('FarmDetails: No user ID available');
+      setState(prev => ({
+        ...prev,
+        isLoading: false,
+        error: 'User not authenticated',
+      }));
       return;
     }
-    const loadData = async () => {
-      await viewModel.loadFarmerData(state.farmerType, user.id);
-      setState(viewModel.getState());
-      if (state.isOffline || viewModel.getState().error?.includes('offline')) {
-        Toast.show({
-          type: 'info',
-          text1: 'Offline Mode',
-          text2: 'Displaying cached data. Changes will sync when online.',
+
+    const fetchFarmerData = async () => {
+      try {
+        console.log('FarmDetails: Loading farmer data for user:', authState.user.id);
+        const getFarmerData = container.get('getFarmerData');
+        const farmer = await getFarmerData.execute({
+          farmerType: 'new',
+          userId: authState.user.id,
         });
-      } else if (viewModel.getState().error) {
-        Toast.show({
-          type: 'error',
-          text1: 'Error',
-          text2: viewModel.getState().error,
-        });
+
+        setState(prev => ({
+          ...prev,
+          formData: farmer || prev.formData,
+          farmerType: farmer ? 'experienced' : 'new',
+          isLoading: false,
+          isOffline: !farmer,
+        }));
+      } catch (error) {
+        console.error('FarmDetails: Error loading farmer data:', error);
+        setState(prev => ({
+          ...prev,
+          isLoading: false,
+          error: error.message,
+        }));
       }
     };
-    loadData();
-  }, [state.farmerType, user?.id, isVerified, navigation]);
 
-  const handleFarmerTypeChange = (type) => {
-    viewModel.setFarmerType(type);
-    setState(viewModel.getState());
-  };
+    fetchFarmerData();
+    return () => console.log('FarmDetails: Component unmounted');
+  }, [container, authState.user?.id]);
 
-  const handleFormChange = (field, value) => {
-    viewModel.updateFormData(field, value);
-    setState(viewModel.getState());
-  };
-
-  const handleFormSubmit = async () => {
+  const handleFormSubmit = async (formData) => {
     try {
-      const success = await viewModel.submitForm(user.id);
-      if (success) {
-        setIsRegistrationComplete(true);
-        Toast.show({
-          type: 'success',
-          text1: 'Success',
-          text2: viewModel.getState().isOffline
-            ? 'Data saved locally. Will sync when online.'
-            : `Registered as ${state.farmerType} farmer!`,
-        });
-        navigation.replace('MainTabs');
-      } else {
-        Toast.show({
-          type: 'error',
-          text1: 'Error',
-          text2: viewModel.getState().error,
-        });
-      }
-    } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: error.message,
+      setState(prev => ({ ...prev, isLoading: true }));
+      
+      console.log('FarmDetails: Submitting form for user:', authState.user.id);
+      const saveFarmerData = container.get('saveFarmerData');
+      await saveFarmerData.execute({
+        userId: authState.user.id,
+        farmerData: { 
+          ...formData, 
+          id: authState.user.id,
+          farmerType: state.farmerType 
+        },
       });
+
+      setIsRegistrationComplete(true);
+    } catch (error) {
+      console.error('FarmDetails: Error saving farmer data:', error);
+      setState(prev => ({
+        ...prev,
+        error: error.message,
+      }));
+    } finally {
+      setState(prev => ({ ...prev, isLoading: false }));
     }
   };
 
-  return (
-    <ScrollableMainContainer contentContainerStyle={styles.container}>
-      <View style={styles.vectorContainer}>
-        <Image
-          source={require('../../../assets/Vector.png')}
-          style={styles.vector2}
-        />
+  if (state.isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#0000ff" />
       </View>
-      <StyledText style={styles.title} bold>
-        Farm Details
-      </StyledText>
-      <StyledText style={styles.subtitle}>
-        Fill in details about your farm to have a personalized insight page.
-      </StyledText>
-      <FarmerTypeInput
-        value={state.farmerType}
-        onChange={handleFarmerTypeChange}
-      />
+    );
+  }
+
+  if (state.error) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ color: 'red', textAlign: 'center' }}>{state.error}</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ flex: 1 }}>
       {state.farmerType === 'new' ? (
         <NewFarmerForm
-          viewModel={viewModel}
           formData={state.formData}
-          onFormChange={handleFormChange}
+          onFormChange={(field, value) => 
+            setState(prev => ({
+              ...prev,
+              formData: { ...prev.formData, [field]: value }
+            }))
+          }
           onSubmit={handleFormSubmit}
-          userId={user?.id}
+          isLoading={state.isLoading}
         />
       ) : (
         <ExperiencedFarmerForm
-          viewModel={viewModel}
           formData={state.formData}
-          onFormChange={handleFormChange}
+          onFormChange={(field, value) => 
+            setState(prev => ({
+              ...prev,
+              formData: { ...prev.formData, [field]: value }
+            }))
+          }
           onSubmit={handleFormSubmit}
-          userId={user?.id}
+          isLoading={state.isLoading}
         />
       )}
-    </ScrollableMainContainer>
+    </View>
   );
-};
+}
 
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    padding: 24,
-    backgroundColor: colors.background,
-  },
-  vectorContainer: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    zIndex: -1,
-  },
-  vector2: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    left: 217,
-  },
-  title: {
-    fontFamily: 'Roboto',
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: colors.grey[600],
-    marginTop: 75,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontFamily: 'Roboto',
-    fontSize: 16,
-    color: colors.grey[500],
-    fontWeight: '400',
-    marginBottom: 32,
-  },
-});
-
-export default FarmDetails;
+export default function FarmDetailsWithErrorBoundary() {
+  return (
+    <ErrorBoundary>
+      <FarmDetails />
+    </ErrorBoundary>
+  );
+}

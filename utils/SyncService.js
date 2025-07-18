@@ -1,65 +1,55 @@
-import NetInfo from '@react-native-community/netinfo';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import container from '../infrastructure/di/Container';
-
 export class SyncService {
-  static async syncOfflineData(userId) {
-    if (!userId) return;
-    const apiFarmerRepository = container.get('apiFarmerRepository');
-    const apiWeatherRepository = container.get('weatherRepository');
-    const apiNewsRepository = container.get('newsRepository');
-    const keys = await AsyncStorage.getAllKeys();
-    const farmerKeys = keys.filter(key => key.startsWith('@ZaoAPP:NewFarmerForm:') || key.startsWith('@ZaoAPP:ExperiencedFarmerForm:'));
-    const weatherKey = `@ZaoAPP:WeatherData:${userId}`;
-    const newsKey = `@ZaoAPP:NewsData:${userId}`;
+  static startSync(userId, container, isVerified, isRegistrationComplete) {
+    console.log('SyncService: Starting sync for user:', userId, 'isVerified:', isVerified, 'isRegistrationComplete:', isRegistrationComplete);
+    if (!userId) {
+      console.warn('SyncService: No userId provided, skipping sync');
+      return () => {};
+    }
+    if (!container) {
+      console.warn('SyncService: No container provided, skipping sync');
+      return () => {};
+    }
+    if (!isVerified) {
+      console.warn('SyncService: User not verified, skipping sync');
+      return () => {};
+    }
+    if (!isRegistrationComplete) {
+      console.warn('SyncService: Registration not complete, skipping sync');
+      return () => {};
+    }
 
-    // Sync farmer data
-    for (const key of farmerKeys) {
+    let isSyncing = false;
+    const sync = async () => {
+      if (isSyncing) {
+        console.log('SyncService: Already syncing, skipping');
+        return;
+      }
+      isSyncing = true;
       try {
-        const data = await AsyncStorage.getItem(key);
-        if (data) {
-          const farmer = JSON.parse(data);
-          console.log('SyncService: Syncing farmer', { key, farmer });
-          await apiFarmerRepository.saveFarmer(farmer, userId);
-          console.log('SyncService: Synced farmer successfully', { key });
+        console.log('SyncService: Device online, starting sync');
+        const farmerRepository = container.get('farmerRepository');
+        const farmerData = await farmerRepository.getFarmer(userId);
+        if (farmerData) {
+          console.log('SyncService: Fetched farmer data:', farmerData);
+          // Perform sync logic
+        } else {
+          console.log('SyncService: No farmer data found, skipping sync');
         }
       } catch (error) {
-        console.error('SyncService: Failed to sync farmer', { key, error: error.message });
+        console.error('SyncService: Sync failed:', error);
+      } finally {
+        isSyncing = false;
       }
-    }
+    };
 
-    // Sync weather data
-    try {
-      const weatherData = await AsyncStorage.getItem(weatherKey);
-      if (weatherData) {
-        console.log('SyncService: Syncing weather', { weatherKey });
-        await apiWeatherRepository.saveWeather(JSON.parse(weatherData));
-        console.log('SyncService: Synced weather successfully');
-      }
-    } catch (error) {
-      console.error('SyncService: Failed to sync weather', { error: error.message });
-    }
+    // Start initial sync
+    sync();
 
-    // Sync news data
-    try {
-      const newsData = await AsyncStorage.getItem(newsKey);
-      if (newsData) {
-        console.log('SyncService: Syncing news', { newsKey });
-        await apiNewsRepository.saveNews(JSON.parse(newsData));
-        console.log('SyncService: Synced news successfully');
-      }
-    } catch (error) {
-      console.error('SyncService: Failed to sync news', { error: error.message });
-    }
-  }
-
-  static startSync(userId) {
-    const unsubscribe = NetInfo.addEventListener(state => {
-      if (state.isConnected) {
-        console.log('SyncService: Device online, starting sync');
-        this.syncOfflineData(userId);
-      }
-    });
-    return unsubscribe;
+    // Set up interval for periodic sync
+    const interval = setInterval(sync, 60000); // Sync every minute
+    return () => {
+      console.log('SyncService: Stopping sync');
+      clearInterval(interval);
+    };
   }
 }

@@ -3,7 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 
 export class StorageService {
   constructor() {
-    this.namespace = 'zao_app'; // Simplified namespace
+    this.namespace = 'zao_app';
     this.maxRetries = 3;
     this.isReady = false;
     this.initializationPromise = null;
@@ -15,16 +15,18 @@ export class StorageService {
 
     this.initializationPromise = (async () => {
       try {
-        // Validate AsyncStorage
+        // First test AsyncStorage
         const testKey = this._getNamespacedKey('test_init');
         await AsyncStorage.setItem(testKey, 'test_value');
         await AsyncStorage.removeItem(testKey);
 
-        // Validate SecureStore if available
+        // Then test SecureStore if available
         const secureStoreAvailable = await SecureStore.isAvailableAsync();
         if (secureStoreAvailable) {
           const secureTestKey = this._getSecureKey('test_init');
-          await SecureStore.setItemAsync(secureTestKey, 'test_value');
+          await SecureStore.setItemAsync(secureTestKey, 'test_value', {
+            keychainAccessible: SecureStore.WHEN_UNLOCKED
+          });
           await SecureStore.deleteItemAsync(secureTestKey);
         }
 
@@ -33,6 +35,7 @@ export class StorageService {
         return true;
       } catch (error) {
         console.error('StorageService: Initialization failed:', error);
+        this.initializationPromise = null; // Reset promise to allow retries
         throw new Error('Storage service unavailable');
       }
     })();
@@ -44,100 +47,59 @@ export class StorageService {
     if (!key || typeof key !== 'string') {
       throw new Error('Invalid key provided');
     }
-    return `${this.namespace}_${key}`.replace(/[^a-zA-Z0-9._-]/g, '_');
+    // Use only alphanumeric and underscores for maximum compatibility
+    return `${this.namespace}_${key.replace(/[^a-zA-Z0-9]/g, '_')}`;
   }
 
   _getSecureKey(key) {
-    const cleanKey = this._getNamespacedKey(key)
-      .replace(/\./g, '_') // Replace dots with underscores
+    // SecureStore has stricter requirements - remove all special chars
+    const cleanKey = `${this.namespace}_${key}`
+      .replace(/[^a-zA-Z0-9]/g, '_') // Replace all non-alphanumeric
       .substring(0, 50); // SecureStore has key length limits
     
-    if (!cleanKey.match(/^[a-zA-Z0-9_-]+$/)) {
-      throw new Error('Invalid SecureStore key format');
+    if (!cleanKey) {
+      throw new Error('Empty SecureStore key after sanitization');
     }
     return cleanKey;
   }
 
-  /**
-   * Stores an item in persistent storage
-   * @param {string} key - The storage key
-   * @param {any} value - The value to store
-   * @returns {Promise<void>}
-   */
+  // Alias for compatibility
+  async setItem(key, value) {
+    return this.storeItem(key, value);
+  }
+
   async storeItem(key, value) {
+    if (!this.isReady) await this.initialize();
     try {
+      const namespacedKey = this._getNamespacedKey(key);
       const stringValue = JSON.stringify(value);
-      await AsyncStorage.setItem(`${this.namespace}:${key}`, stringValue);
+      await AsyncStorage.setItem(namespacedKey, stringValue);
     } catch (error) {
       console.error(`StorageService: Failed to store ${key}:`, error);
       throw error;
     }
   }
 
-  async storeItemDebounced(key, value) {
-    if (!this.isReady) await this.initialize();
-    clearTimeout(this.debounceTimer);
-    return new Promise((resolve) => {
-      this.debounceTimer = setTimeout(async () => {
-        try {
-          await this.storeItem(key, value);
-          resolve();
-        } catch (error) {
-          console.error(`StorageService: Debounced store failed for ${key}:`, error);
-          throw error;
-        }
-      }, 300);
-    });
-  }
-
-  async storeRegistrationStatus(value) {
-    if (!this.isReady) await this.initialize();
-    const key = 'Registration';
-    try {
-      console.log('StorageService: Storing registration status:', value);
-      await this.storeItem(key, value);
-    } catch (error) {
-      console.error('StorageService: Failed to store registration status:', error);
-      throw new Error(`Failed to store registration status: ${error.message}`);
-    }
-  }
-
   async getItem(key, retries = this.maxRetries) {
     if (!this.isReady) await this.initialize();
-    const namespacedKey = `${this.namespace}:${key}`;
+    const namespacedKey = this._getNamespacedKey(key);
     try {
-      console.log(`StorageService: Getting ${namespacedKey}`);
       const stringValue = await AsyncStorage.getItem(namespacedKey);
       return stringValue != null ? JSON.parse(stringValue) : null;
     } catch (error) {
       console.error(`StorageService: Failed to get ${namespacedKey}:`, error);
       if (retries > 0) {
-        console.log(`StorageService: Retrying get ${namespacedKey}, ${retries} attempts left`);
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 500));
         return this.getItem(key, retries - 1);
       }
       throw new Error(`Storage error: ${error.message}`);
     }
   }
 
-  async getSecureItem(key) {
-    if (!this.isReady) await this.initialize();
-    const namespacedKey = `${this.namespace}:${key}`;
-    try {
-      console.log(`StorageService: Getting secure item ${namespacedKey}`);
-      const stringValue = await SecureStore.getItemAsync(namespacedKey);
-      return stringValue != null ? JSON.parse(stringValue) : null;
-    } catch (error) {
-      console.error(`StorageService: Failed to get secure item ${namespacedKey}:`, error);
-      throw new Error(`Secure storage error: ${error.message}`);
-    }
-  }
-
   async removeItem(key) {
     if (!this.isReady) await this.initialize();
-    const namespacedKey = `${this.namespace}:${key}`;
+    const namespacedKey = this._getNamespacedKey(key);
     try {
-      console.log(`StorageService: Removing ${namespacedKey}`);
       await AsyncStorage.removeItem(namespacedKey);
     } catch (error) {
       console.error(`StorageService: Failed to remove ${namespacedKey}:`, error);
@@ -148,13 +110,31 @@ export class StorageService {
   async clear() {
     if (!this.isReady) await this.initialize();
     try {
-      console.log('StorageService: Clearing storage');
       const keys = await AsyncStorage.getAllKeys();
-      const appKeys = keys.filter((key) => key.startsWith(this.namespace));
+      const appKeys = keys.filter(key => key.startsWith(this.namespace));
       await AsyncStorage.multiRemove(appKeys);
     } catch (error) {
-      console.error(`StorageService: Failed to clear storage:`, error);
+      console.error('StorageService: Failed to clear storage:', error);
       throw new Error(`Storage error: ${error.message}`);
     }
   }
+
+async healthCheck() {
+  try {
+    const testKey = this._getNamespacedKey('health_check');
+    await AsyncStorage.setItem(testKey, 'test_value');
+    await AsyncStorage.removeItem(testKey);
+    
+    if (await SecureStore.isAvailableAsync()) {
+      const secureTestKey = this._getSecureKey('health_check');
+      await SecureStore.setItemAsync(secureTestKey, 'test_value');
+      await SecureStore.deleteItemAsync(secureTestKey);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('StorageService health check failed:', error);
+    return false;
+  }
+}
 }

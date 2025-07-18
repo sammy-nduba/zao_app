@@ -1,7 +1,7 @@
 // components/FarmerTypeInput.js
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { StyledButton } from '../../components/Buttons/StyledButton';
+import StyledButton from '../../components/Buttons/StyledButton';
 import StyledText from '../Texts/StyledText';
 import { colors } from '../../config/theme';
 

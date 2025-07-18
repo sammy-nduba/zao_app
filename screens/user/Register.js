@@ -1,4 +1,3 @@
-// src/screens/Register.js
 import React, { useState, useContext, useEffect } from 'react';
 import { View, Image, StyleSheet, TouchableOpacity, ActivityIndicator, Linking } from 'react-native';
 import { ScrollableMainContainer } from '../../components';
@@ -12,6 +11,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { RegistrationViewModel } from '../../viewModel/RegistrationViewModel';
 import container from '../../infrastructure/di/Container';
+import { LoadingDialog } from '../../components/LoadingDialog';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -24,6 +24,8 @@ const Register = () => {
   const [fieldErrors, setFieldErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
+
   const [step, setStep] = useState('form');
   const [viewModel, setViewModel] = useState(null);
   const { setIsRegistered, setUser } = useContext(AuthContext);
@@ -31,6 +33,7 @@ const Register = () => {
 
   useEffect(() => {
     const init = async () => {
+      setLoadingMessage('Initializing application...');
       if (!container.isInitialized) {
         try {
           await container.initialize();
@@ -59,6 +62,9 @@ const Register = () => {
           text1: 'Initialization Error',
           text2: 'Failed to load registration. Please try again.',
         });
+      } finally {
+        setLoadingMessage('');
+      
       }
     };
     init();
@@ -113,13 +119,19 @@ const Register = () => {
     );
   }
 
-  const passwordRequirements = viewModel.getPasswordRequirements(formData.password);
-  const metRequirementsCount = passwordRequirements.filter((req) => req.met).length;
+  const passwordRequirements = viewModel 
+    ? viewModel.getPasswordRequirements(formData.password)
+    : [];
+  
+  const metRequirementsCount = passwordRequirements.filter(req => req.met).length;
 
-  const isFormValid = () =>
-    ['firstName', 'lastName', 'email', 'phoneNumber', 'password'].every(
-      (key) => formData[key].trim() !== '' && !fieldErrors[key]
+  const isFormValid = () => {
+    if (!viewModel) return false;
+    
+    return ['firstName', 'lastName', 'email', 'phoneNumber', 'password'].every(
+      key => formData[key].trim() !== '' && !fieldErrors[key]
     ) && metRequirementsCount === passwordRequirements.length;
+  };
 
   const handleFieldChange = (fieldName, value) => {
     setFormData((prev) => ({ ...prev, [fieldName]: value }));
@@ -134,15 +146,12 @@ const Register = () => {
     setIsLoading(true);
     setFieldErrors({});
     try {
-      console.log('Initiating signup:', formData);
       const result = await viewModel.initiateSignup(formData);
-      console.log('Initiate signup result:', result);
       if (result.success) {
-        setStep('verify');
         Toast.show({
           type: 'success',
           text1: 'Verification Email Sent',
-          text2: result.message || 'Please check your email to verify your account!',
+          text2: 'Please check your email to verify your account!',
         });
         navigation.navigate('EmailVerification', {
           token: result.token,
@@ -150,6 +159,7 @@ const Register = () => {
           firstName: formData.firstName,
           lastName: formData.lastName,
           phoneNumber: formData.phoneNumber,
+          autoVerify: true 
         });
       } else {
         setFieldErrors(result.fieldErrors || {});
@@ -350,6 +360,10 @@ const Register = () => {
 
   return (
     <ScrollableMainContainer contentContainerStyle={styles.container}>
+
+<LoadingDialog visible={isLoading} message={loadingMessage} />
+
+
       <View style={styles.vectorContainer}>
         <Image source={require('../../assets/Vector 1.png')} />
         <Image source={require('../../assets/Vector.png')} style={styles.vector2} />
@@ -559,6 +573,25 @@ const Register = () => {
 
 
 const styles = StyleSheet.create({
+  loadingDialogContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  loadingDialog: {
+    backgroundColor: colors.background,
+    padding: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    minWidth: 200,
+  },
+  loadingDialogText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: colors.grey[600],
+    textAlign: 'center',
+  },
   container: {
     flexGrow: 1,
     padding: 24,

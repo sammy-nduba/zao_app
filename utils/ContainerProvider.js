@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator } from 'react-native';
 import container from '../infrastructure/di/Container';
 
 const ContainerContext = createContext(null);
@@ -9,9 +9,11 @@ export const ContainerProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    console.log('ContainerProvider: Starting initialization');
     const initialize = async () => {
       try {
         await container.initialize();
+        console.log('ContainerProvider: Initialization successful');
         setIsReady(true);
       } catch (err) {
         console.error('ContainerProvider: Initialization failed:', err);
@@ -25,7 +27,9 @@ export const ContainerProvider = ({ children }) => {
   if (error) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Failed to initialize application dependencies</Text>
+        <Text style={{ color: 'red', textAlign: 'center' }}>
+          Failed to initialize application dependencies: {error.message}
+        </Text>
       </View>
     );
   }
@@ -33,7 +37,8 @@ export const ContainerProvider = ({ children }) => {
   if (!isReady) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#0000ff" />
+        <Text>Initializing application...</Text>
       </View>
     );
   }

@@ -1,109 +1,127 @@
 export class AuthViewModel {
   constructor(storageService) {
+    if (!storageService || typeof storageService.setItem !== 'function') {
+      throw new Error('Invalid storage service provided');
+    }
+
+    console.log('AuthViewModel: Constructor called');
     this.storageService = storageService;
     this.state = {
-      user: null,
       isZaoAppOnboarded: null,
-      isRegistered: false,
       isLoggedIn: false,
-      isVerified: false,
-      isRegistrationComplete: false,
+      isRegistered: false,
+      user: null,
       isLoading: false,
       authError: null,
+      isVerified: false,
+      isRegistrationComplete: false,
     };
   }
 
   async initialize() {
-    this.state.isLoading = true;
+    console.log('AuthViewModel: Initializing');
     try {
-      // Ensure StorageService is initialized
-      await this.storageService.initialize();
+      this.setIsLoading(true);
       
-      const [
-        onboardingStatus,
-        registrationStatus,
-        loginStatus,
-        user,
-        isVerified,
-        isRegistrationComplete,
-      ] = await Promise.all([
-        this.storageService.getItem('Onboarding'),
-        this.storageService.getItem('Registration'),
-        this.storageService.getItem('Login'),
-        this.storageService.getItem('User'),
-        this.storageService.getItem('isVerified'),
-        this.storageService.getItem('isRegistrationComplete'),
-      ]);
+      // Load user data
+      const user = await this.storageService.getItem('user');
+      console.log('AuthViewModel: Loaded user:', user);
+      if (user) {
+        try {
+          const userData = typeof user === 'string' ? JSON.parse(user) : user;
+          if (!userData?.id) throw new Error('Invalid user data: missing id');
+          this.setUser(userData);
+        } catch (parseError) {
+          console.error('AuthViewModel: Failed to parse user data:', parseError);
+          await this.storageService.removeItem('user');
+        }
+      }
 
-      this.state.isZaoAppOnboarded = onboardingStatus === 'true' || onboardingStatus === true || false;
-      this.state.isRegistered = registrationStatus === 'true' || registrationStatus === true || false;
-      this.state.isLoggedIn = loginStatus === 'true' || loginStatus === true || false;
-      this.state.user = user || null;
-      this.state.isVerified = isVerified === 'true' || isVerified === true || false;
-      this.state.isRegistrationComplete = isRegistrationComplete === 'true' || isRegistrationComplete === true || false;
+      // Load onboarding status
+      const onboarded = await this.storageService.getItem('isZaoAppOnboarded');
+      console.log('AuthViewModel: Loaded isZaoAppOnboarded:', onboarded);
+      this.setIsZaoAppOnboarded(onboarded === 'true');
 
-      console.log('AuthViewModel: Initialized state:', this.state);
     } catch (error) {
-      console.error('AuthViewModel: Initialize error:', error);
-      this.state.authError = `Failed to initialize auth state: ${error.message}`;
+      console.error('AuthViewModel: Initialization failed:', error);
+      this.setAuthError(error.message);
     } finally {
-      this.state.isLoading = false;
+      this.setIsLoading(false);
     }
   }
 
-  setIsZaoAppOnboarded(value) {
+  async setUser(userData) {
+    console.log('AuthViewModel: Setting user:', userData);
+    this.state.user = userData;
+    this.state.isLoggedIn = !!userData;
+    this.state.isVerified = userData?.isVerified || false;
+    
+    if (userData) {
+      try {
+        await this.storageService.setItem('user', userData);
+      } catch (error) {
+        console.error('AuthViewModel: Failed to persist user:', error);
+      }
+    }
+  }
+
+  async setIsVerified(value) {
+    console.log('AuthViewModel: Setting isVerified:', value);
+    this.state.isVerified = value;
+    if (this.state.user) {
+      this.state.user.isVerified = value;
+      try {
+        await this.storageService.setItem('user', this.state.user);
+      } catch (error) {
+        console.error('AuthViewModel: Failed to update verified status:', error);
+      }
+    }
+  }
+
+  async setIsRegistrationComplete(value) {
+    console.log('AuthViewModel: Setting isRegistrationComplete:', value);
+    this.state.isRegistrationComplete = value;
+    if (this.state.user) {
+      this.state.user.isRegistrationComplete = value;
+      try {
+        await this.storageService.setItem('user', this.state.user);
+      } catch (error) {
+        console.error('AuthViewModel: Failed to update registration status:', error);
+      }
+    }
+  }
+
+  async setIsZaoAppOnboarded(value) {
+    console.log('AuthViewModel: Setting isZaoAppOnboarded:', value);
     this.state.isZaoAppOnboarded = value;
-    this.storageService.storeItem('Onboarding', value).catch((error) => {
-      console.error('AuthViewModel: Failed to store Onboarding:', error);
-      this.state.authError = `Failed to store onboarding status: ${error.message}`;
-    });
+    try {
+      await this.storageService.setItem('isZaoAppOnboarded', value.toString());
+    } catch (error) {
+      console.error('AuthViewModel: Failed to store onboarding status:', error);
+    }
   }
 
   setIsRegistered(value) {
+    console.log('AuthViewModel: Setting isRegistered:', value);
     this.state.isRegistered = value;
-    this.storageService.storeItem('Registration', value).catch((error) => {
-      console.error('AuthViewModel: Failed to store Registration:', error);
-      this.state.authError = `Failed to store registration status: ${error.message}`;
-    });
   }
 
   setIsLoggedIn(value) {
+    console.log('AuthViewModel: Setting isLoggedIn:', value);
     this.state.isLoggedIn = value;
-    this.storageService.storeItem('Login', value).catch((error) => {
-      console.error('AuthViewModel: Failed to store Login:', error);
-      this.state.authError = `Failed to store login status: ${error.message}`;
-    });
   }
 
-  setUser(user) {
-    this.state.user = user;
-    this.storageService.storeItem('User', user).catch((error) => {
-      console.error('AuthViewModel: Failed to store User:', error);
-      this.state.authError = `Failed to store user data: ${error.message}`;
-    });
-  }
-
-  setIsVerified(value) {
-    this.state.isVerified = value;
-    this.storageService.storeItem('isVerified', value).catch((error) => {
-      console.error('AuthViewModel: Failed to store isVerified:', error);
-      this.state.authError = `Failed to store verification status: ${error.message}`;
-    });
-  }
-
-  setIsRegistrationComplete(value) {
-    this.state.isRegistrationComplete = value;
-    this.storageService.storeItem('isRegistrationComplete', value).catch((error) => {
-      console.error('AuthViewModel: Failed to store isRegistrationComplete:', error);
-      this.state.authError = `Failed to store registration complete status: ${error.message}`;
-    });
+  setIsLoading(value) {
+    console.log('AuthViewModel: Setting isLoading:', value);
+    this.state.isLoading = value;
   }
 
   setAuthError(error) {
+    console.log('AuthViewModel: Setting authError:', error);
     this.state.authError = error;
   }
 
   getState() {
-    return { ...this.state };
+    return { ...this.state }; // Return copy to prevent direct mutation
   }
 }

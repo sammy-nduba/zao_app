@@ -1,4 +1,4 @@
-import { createContext } from 'react';
+import { createContext, useContext } from 'react';
 
 export const AuthContext = createContext({
   isZaoAppOnboarded: null,
@@ -25,4 +25,20 @@ export const AuthContext = createContext({
   setAuthError: () => {
     throw new Error('setAuthError not implemented');
   },
+  isVerified: false,
+  setIsVerified: () => {
+    throw new Error('setIsVerified not implemented');
+  },
+  isRegistrationComplete: false,
+  setIsRegistrationComplete: () => {
+    throw new Error('setIsRegistrationComplete not implemented');
+  },
 });
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthContext.Provider');
+  }
+  return context;
+};

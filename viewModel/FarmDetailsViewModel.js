@@ -3,9 +3,15 @@ import container from '../infrastructure/di/Container';
 
 export class FarmDetailsViewModel {
   constructor() {
-    this.saveFarmerData = container.get('saveFarmerData');
-    this.validateFarmerData = container.get('validateFarmerData');
-    this.getFarmerData = container.get('getFarmerData');
+    try {
+      this.saveFarmerData = container.get('saveFarmerData');
+      this.validateFarmerData = container.get('validateFarmerData');
+      this.getFarmerData = container.get('getFarmerData');
+    } catch (error) {
+      console.error('Dependency initialization failed:', error);
+      throw new Error('Failed to initialize dependencies');
+    }
+
     this.state = {
       farmerType: 'new',
       formData: new Farmer({}),
@@ -48,7 +54,8 @@ export class FarmDetailsViewModel {
       }
     } catch (error) {
       this.state.error = error.message;
-      this.state.isOffline = error.message.includes('offline');
+      this.state.isOffline = error.message.includes('offline') || 
+                           error.message.includes('network');
     } finally {
       this.state.isLoading = false;
     }
@@ -67,7 +74,9 @@ export class FarmDetailsViewModel {
       return true;
     } catch (error) {
       this.state.error = error.message;
-      this.state.isOffline = error.message.includes('502') || error.message.includes('timed out');
+      this.state.isOffline = error.message.includes('502') || 
+                            error.message.includes('timed out') ||
+                            error.message.includes('network');
       return false;
     } finally {
       this.state.isLoading = false;

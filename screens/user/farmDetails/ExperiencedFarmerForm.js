@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-import { StyledButton, ScrollableMainContainer, CropSelection } from '../../../components';
+import StyledButton from '../../../components/Buttons/StyledButton';
+import ScrollableMainContainer from '../../../components/container/ScrollableMainContainer';
+import CropSelection from '../../../components/farmDetailComponents/CropSelection';
 import StyledText from '../../../components/Texts/StyledText';
 import StyledTextInput from '../../../components/inputs/StyledTextInput';
 import { colors } from '../../../config/theme';
@@ -8,7 +10,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-const ExperiencedFarmerForm = ({ viewModel, formData, onFormChange, navigation }) => {
+const ExperiencedFarmerForm = ({ formData, onFormChange, onSubmit, isLoading }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const cropOptions = ['Avocado', 'Tomato', 'Maize', 'Cabbage', 'Rice'];
@@ -17,7 +19,7 @@ const ExperiencedFarmerForm = ({ viewModel, formData, onFormChange, navigation }
 
   const isFormValid = () => {
     return (
-      formData.selectedCrops.length > 0 &&
+      formData.selectedCrops?.length > 0 &&
       formData.farmSize &&
       formData.location &&
       formData.cropAge &&
@@ -28,9 +30,9 @@ const ExperiencedFarmerForm = ({ viewModel, formData, onFormChange, navigation }
   };
 
   const handleCropChange = (crop) => {
-    const newCrops = formData.selectedCrops.includes(crop)
+    const newCrops = formData.selectedCrops?.includes(crop)
       ? formData.selectedCrops.filter((item) => item !== crop)
-      : [...formData.selectedCrops, crop];
+      : [...(formData.selectedCrops || []), crop];
     onFormChange('selectedCrops', newCrops);
   };
 
@@ -56,82 +58,33 @@ const ExperiencedFarmerForm = ({ viewModel, formData, onFormChange, navigation }
       setSelectedDate(date);
       const formattedDate = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
       onFormChange('lastManure', formattedDate);
-      Toast.show({
-        type: 'success',
-        text1: 'Date Selected',
-        text2: `Last manure date set to ${formattedDate}`,
-      });
     }
   };
-
-const handleGetStarted = async () => {
-  if (!userId) {
-    Toast.show({
-      type: 'error',
-      text1: 'Error',
-      text2: 'User not authenticated. Please register first.',
-    });
-    navigation.navigate('Register');
-    return;
-  }
-  setIsLoading(true);
-  try {
-    const success = await viewModel.submitForm(userId);
-    if (success) {
-      Toast.show({
-        type: 'success',
-        text1: 'Success',
-        text2: viewModel.getState().isOffline
-          ? 'Data saved locally. Will sync when online.'
-          : 'Form submitted! Welcome to your dashboard.',
-      });
-      navigation.navigate('Login');
-    } else {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: viewModel.getState().isOffline
-          ? 'Data saved locally. Will sync when online.'
-          : viewModel.getState().error,
-      });
-    }
-  } catch (error) {
-    Toast.show({
-      type: 'error',
-      text1: 'Error',
-      text2: error.message.includes('502') || error.message.includes('timed out')
-        ? 'Data saved locally. Will sync when online.'
-        : error.message,
-    });
-  } finally {
-    setIsLoading(false);
-  }
-};
-
 
   return (
     <ScrollableMainContainer contentContainerStyle={styles.container}>
       <View style={styles.section}>
         <StyledText style={styles.sectionTitle}>
-          What crops are you mostly interested in?
+          What crops are you currently farming?
         </StyledText>
         <StyledTextInput
           placeholder="Select crops..."
-          value={formData.selectedCrops.join(', ')}
+          value={formData.selectedCrops?.join(', ') || ''}
           editable={false}
           style={styles.input}
         />
         <CropSelection
-          selectedCrops={formData.selectedCrops}
-          toggleCropSelection={handleCropChange}
+          options={cropOptions}
+          selectedOptions={formData.selectedCrops || []}
+          onToggle={handleCropChange}
         />
       </View>
 
       <View style={styles.section}>
-        <StyledText style={styles.sectionTitle}>How many acres do you intend to farm on?</StyledText>
+        <StyledText style={styles.sectionTitle}>Current farm size</StyledText>
         <StyledTextInput
           placeholder={farmSizeOptions[0]}
-          value={formData.farmSize}
+          value={formData.farmSize || ''}
           editable={false}
           style={styles.input}
         />
@@ -152,11 +105,11 @@ const handleGetStarted = async () => {
       </View>
 
       <View style={styles.section}>
-        <StyledText style={styles.sectionTitle}>Where is your farm located?</StyledText>
+        <StyledText style={styles.sectionTitle}>Farm location</StyledText>
         <View style={styles.inputContainer}>
           <StyledTextInput
             placeholder="Enter location"
-            value={formData.location}
+            value={formData.location || ''}
             onChangeText={(text) => handleTextInputChange('location', text)}
             style={[styles.input, styles.locationInput]}
           />
@@ -167,30 +120,28 @@ const handleGetStarted = async () => {
       </View>
 
       <View style={styles.section}>
-        <StyledText style={styles.sectionTitle}>What is the age of the oldest crop in your farm?</StyledText>
+        <StyledText style={styles.sectionTitle}>Age of oldest crop</StyledText>
         <StyledTextInput
           placeholder="Enter age (e.g., 12 Months)"
-          value={formData.cropAge}
+          value={formData.cropAge || ''}
           onChangeText={(text) => handleTextInputChange('cropAge', text)}
           style={styles.input}
         />
       </View>
 
       <View style={styles.section}>
-        <StyledText style={styles.sectionTitle}>When was the last time you applied manure?</StyledText>
+        <StyledText style={styles.sectionTitle}>Last manure application date</StyledText>
         <View style={styles.inputContainer}>
           <StyledTextInput
             placeholder="Select date..."
-            value={formData.lastManure}
+            value={formData.lastManure || ''}
             editable={false}
             style={[styles.input, styles.dateInput]}
             onPressIn={() => setShowDatePicker(true)}
-            testID="date-input"
           />
           <TouchableOpacity
             style={styles.iconButton}
             onPress={() => setShowDatePicker(true)}
-            testID="date-picker-icon"
           >
             <MaterialCommunityIcons name="calendar" size={24} color={colors.grey[600]} />
           </TouchableOpacity>
@@ -203,18 +154,15 @@ const handleGetStarted = async () => {
             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
             onChange={handleDateChange}
             maximumDate={new Date()}
-            themeVariant="light"
-            textColor={colors.grey[600]}
-            testID="date-picker"
           />
         )}
       </View>
 
       <View style={styles.section}>
-        <StyledText style={styles.sectionTitle}>Last time fertilizer was applied/sprayed?</StyledText>
+        <StyledText style={styles.sectionTitle}>Last fertilizer used</StyledText>
         <StyledTextInput
           placeholder="Select fertilizer..."
-          value={formData.fertilizer}
+          value={formData.fertilizer || ''}
           editable={false}
           style={styles.input}
         />
@@ -235,20 +183,21 @@ const handleGetStarted = async () => {
       </View>
 
       <View style={styles.section}>
-        <StyledText style={styles.sectionTitle}>What is the current phase of your crop?</StyledText>
+        <StyledText style={styles.sectionTitle}>Current crop phase</StyledText>
         <StyledTextInput
           placeholder="Enter crop phase (e.g., Vegetative)"
-          value={formData.cropPhase}
+          value={formData.cropPhase || ''}
           onChangeText={(text) => handleTextInputChange('cropPhase', text)}
           style={styles.input}
         />
       </View>
 
       <StyledButton
-        title="Get Started"
-        onPress={handleGetStarted}
+        title="Save Details"
+        onPress={onSubmit}
         style={styles.getStartedButton}
-        disabled={viewModel.getState().isLoading || !isFormValid()}
+        disabled={isLoading || !isFormValid()}
+        loading={isLoading}
       />
     </ScrollableMainContainer>
   );

@@ -1,14 +1,14 @@
 import { AsyncStorageFarmerRepository } from '../../domain/repository/farmer/AsyncStorageFarmerRepository';
 import { ApiFarmerRepository } from '../../data/repositories/ApiFarmerRepository';
-import { SaveFarmerData } from '../../domain/UseCases/farmer/SaveFarmerData';
+import { StorageService } from '../../infrastructure/storage/StorageService';
 import { ValidateFarmerData } from '../../domain/UseCases/farmer/ValidateFarmerData';
 import { GetFarmerData } from '../../domain/UseCases/farmer/GetFarmerData';
+import { SaveFarmerData } from '../../domain/UseCases/farmer/SaveFarmerData';
 import { ApiUserRepository } from '../../data/repositories/ApiUserRepository';
-import { StorageService } from '../../infrastructure/storage/StorageService';
 import { SocialAuthService } from '../../data/repositories/SocialAuthService';
-import { VerifyEmailUseCase } from '../../domain/UseCases/user/VerifyEmailUseCase'; 
+import { VerifyEmailUseCase } from '../../domain/UseCases/user/VerifyEmailUseCase';
 import { RegisterUserUseCase } from '../../domain/UseCases/user/RegisterUserUseCase';
-import { SocialRegisterUseCase } from '../../domain/UseCases/user/SocialRegisterUseCase'; 
+import { SocialRegisterUseCase } from '../../domain/UseCases/user/SocialRegisterUseCase';
 import { ValidationService } from '../../services/ValidationService';
 import { ApiWeatherRepository } from '../../data/repositories/ApiWeatherRepository';
 import { ApiNewsRepository } from '../../data/repositories/ApiNewsRepository';
@@ -27,10 +27,8 @@ import { SelectLanguageUseCase } from '../../domain/UseCases/language/SelectLang
 import { GetSelectedLanguageUseCase } from '../../domain/UseCases/language/GetSelectedLanguageUseCase';
 import { LanguageSelectionPresenter } from '../../viewModel/LanguageSelectionPresenter';
 import { ForgotPasswordUseCase } from '../../domain/UseCases/user/ForgotPasswordUseCase';
-import { ResetPasswordUseCase } from '../../domain/UseCases/user/ResetPasswordUseCase'; // New import
+import { ResetPasswordUseCase } from '../../domain/UseCases/user/ResetPasswordUseCase';
 
-
-// container.js
 class Container {
   constructor() {
     this.dependencies = new Map();
@@ -41,139 +39,198 @@ class Container {
   }
 
   async initialize() {
-    if (this.isInitialized) return true;
-    if (this.initializationPromise) return this.initializationPromise;
+    if (this.isInitialized) {
+      console.log('Container: Already initialized, skipping');
+      return true;
+    }
+    if (this.initializationPromise) {
+      console.log('Container: Returning existing initialization promise');
+      return this.initializationPromise;
+    }
 
     this.initializationPromise = (async () => {
       try {
         this.initializationAttempts++;
         console.log(`Container: Initialization attempt ${this.initializationAttempts}`);
 
-        // Initialize StorageService first
+        // 1. Initialize Core Services
+        console.log('Container: Initializing StorageService');
         const storageService = new StorageService();
         await storageService.initialize();
-        this.dependencies.set('storageService', storageService);
+        console.log('Container: StorageService initialized');
 
-        // Register other dependencies
-        await this.register();
+        console.log('Container: Initializing ValidationService');
+        const validationService = new ValidationService();
+
+        // 2. Initialize API Clients
+        console.log('Container: Initializing ApiClients');
+        const appApiClient = new ApiClient('https://zao-backend-api.onrender.com');
+        const weatherApiClient = new ApiClient('http://api.weatherapi.com/v1');
+        const newsApiClient = new ApiClient('https://newsapi.org/v2');
+
+        // 3. Initialize Repositories
+        console.log('Container: Initializing Repositories');
+        const repositories = {
+          user: new ApiUserRepository(appApiClient),
+          socialAuth: new SocialAuthService(appApiClient),
+          farmer: new ApiFarmerRepository(appApiClient),
+          asyncFarmer: new AsyncStorageFarmerRepository(),
+          weather: new ApiWeatherRepository(weatherApiClient),
+          asyncWeather: new AsyncStorageWeatherRepository(),
+          news: new ApiNewsRepository(newsApiClient),
+          asyncNews: new AsyncStorageNewsRepository(),
+          dashboard: new LocalDashboardRepository(),
+          language: new LanguageRepositoryImpl(),
+        };
+
+        // 4. Register Core Dependencies
+        console.log('Container: Registering core dependencies');
+        this.dependencies.set('storageService', storageService);
+        this.dependencies.set('validationService', validationService);
+        this.dependencies.set('appApiClient', appApiClient);
+        this.dependencies.set('weatherApiClient', weatherApiClient);
+        this.dependencies.set('newsApiClient', newsApiClient);
+
+        // 5. Register Repositories
+        console.log('Container: Registering repositories');
+        Object.entries(repositories).forEach(([key, repo]) => {
+          this.dependencies.set(`${key}Repository`, repo);
+          console.log(`Container: Registered ${key}Repository`);
+        });
+
+        // 6. Register Use Cases
+        console.log('Container: Registering use cases');
+        this.registerUseCases();
 
         this.isInitialized = true;
-        console.log('Container: Initialized successfully');
+        console.log('Container: Initialized successfully with dependencies:', 
+          Array.from(this.dependencies.keys()));
         return true;
       } catch (error) {
         console.error('Container: Initialization failed:', error);
-
         if (this.initializationAttempts < this.maxInitializationAttempts) {
+          console.log('Container: Retrying initialization');
           await new Promise(resolve => setTimeout(resolve, 1000));
           return this.initialize();
         }
-
-        throw new Error('Failed to initialize container after multiple attempts');
+        throw new Error(`Failed to initialize container after ${this.maxInitializationAttempts} attempts: ${error.message}`);
+      } finally {
+        this.initializationPromise = null;
       }
     })();
 
     return this.initializationPromise;
-  
+  }
 
-}
-  async register() {
-    try {
-      // Register independent dependencies
-      console.log('Container: Registering API clients');
-      const weatherApiClient = new ApiClient('http://api.weatherapi.com/v1');
-      const newsApiClient = new ApiClient('https://newsapi.org/v2');
-      const appApiClient = new ApiClient('https://zao-backend-api.onrender.com');
-      this.dependencies.set('weatherApiClient', weatherApiClient);
-      this.dependencies.set('newsApiClient', newsApiClient);
-      this.dependencies.set('appApiClient', appApiClient);
+  registerUseCases() {
+    console.log('Container: Starting registerUseCases');
+    const {
+      userRepository,
+      socialAuthRepository,
+      farmerRepository,
+      asyncFarmerRepository,
+      weatherRepository,
+      asyncWeatherRepository,
+      newsRepository,
+      asyncNewsRepository,
+      dashboardRepository,
+      languageRepository,
+      storageService,
+      validationService,
+    } = this.getAllDependencies();
 
-      console.log('Container: Registering storage service');
-      const storageService = new StorageService();
-      this.dependencies.set('storageService', storageService);
+    // User Use Cases
+    console.log('Container: Registering user use cases');
+    this.registerUserUseCases(userRepository, socialAuthRepository, storageService, validationService);
 
-      console.log('Container: Registering validation service');
-      const validationService = new ValidationService();
-      this.dependencies.set('validationService', validationService);
+    // Farmer Use Cases
+    console.log('Container: Registering validateFarmerData');
+    this.dependencies.set('validateFarmerData', new ValidateFarmerData());
+    console.log('Container: Registering getFarmerData');
+    this.dependencies.set('getFarmerData', new GetFarmerData(farmerRepository, asyncFarmerRepository));
+    console.log('Container: Registering saveFarmerData');
+    this.dependencies.set('saveFarmerData', new SaveFarmerData(farmerRepository, asyncFarmerRepository));
 
-      console.log('Container: Registering repositories');
-      const asyncStorageFarmerRepository = new AsyncStorageFarmerRepository();
-      const apiFarmerRepository = new ApiFarmerRepository(appApiClient);
-      const userRepository = new ApiUserRepository(appApiClient);
-      const socialAuthService = new SocialAuthService(appApiClient);
-      const weatherRepository = new ApiWeatherRepository(weatherApiClient);
-      const asyncStorageWeatherRepository = new AsyncStorageWeatherRepository();
-      const newsRepository = new ApiNewsRepository(newsApiClient);
-      const asyncStorageNewsRepository = new AsyncStorageNewsRepository();
-      const dashboardRepository = new LocalDashboardRepository();
-      const languageRepository = new LanguageRepositoryImpl();
-      this.dependencies.set('asyncStorageFarmerRepository', asyncStorageFarmerRepository);
-      this.dependencies.set('apiFarmerRepository', apiFarmerRepository);
-      this.dependencies.set('userRepository', userRepository);
-      this.dependencies.set('socialAuthService', socialAuthService);
-      this.dependencies.set('weatherRepository', weatherRepository);
-      this.dependencies.set('asyncStorageWeatherRepository', asyncStorageWeatherRepository);
-      this.dependencies.set('newsRepository', newsRepository);
-      this.dependencies.set('asyncStorageNewsRepository', asyncStorageNewsRepository);
-      this.dependencies.set('dashboardRepository', dashboardRepository);
-      this.dependencies.set('languageRepository', languageRepository);
+    // Home/Data Use Cases
+    console.log('Container: Registering getWeatherUseCase');
+    this.dependencies.set('getWeatherUseCase', new GetWeatherUseCase(weatherRepository, asyncWeatherRepository));
+    console.log('Container: Registering getNewsUseCase');
+    this.dependencies.set('getNewsUseCase', new GetNewsUseCase(newsRepository, asyncNewsRepository));
+    console.log('Container: Registering getDashboardDataUseCase');
+    this.dependencies.set('getDashboardDataUseCase', new GetDashboardDataUseCase(dashboardRepository, asyncFarmerRepository));
 
-      console.log('Container: Registering use cases');
-      console.log('Container: Registering saveFarmerData');
-      this.dependencies.set('saveFarmerData', new SaveFarmerData(apiFarmerRepository, asyncStorageFarmerRepository));
-      console.log('Container: Registering validateFarmerData');
-      this.dependencies.set('validateFarmerData', new ValidateFarmerData());
-      console.log('Container: Registering getFarmerData');
-      this.dependencies.set('getFarmerData', new GetFarmerData(apiFarmerRepository, asyncStorageFarmerRepository));
-      console.log('Container: Registering registerUserUseCase');
-      this.dependencies.set('registerUserUseCase', new RegisterUserUseCase(userRepository, validationService, storageService));
-      console.log('Container: Registering socialRegisterUseCase');
-      this.dependencies.set('socialRegisterUseCase', new SocialRegisterUseCase(socialAuthService, storageService));
-      console.log('Container: Registering loginUserUseCase');
-      this.dependencies.set('loginUserUseCase', new LoginUserUseCase(userRepository, validationService, storageService));
-      console.log('Container: Registering socialLoginUseCase');
-      this.dependencies.set('socialLoginUseCase', new SocialLoginUseCase(socialAuthService, storageService));
-      console.log('Container: Registering verifyEmailUseCase');
-      this.dependencies.set('verifyEmailUseCase', new VerifyEmailUseCase(userRepository, storageService));
-      console.log('Container: Registering getWeatherUseCase');
-      this.dependencies.set('getWeatherUseCase', new GetWeatherUseCase(weatherRepository, asyncStorageWeatherRepository));
-      console.log('Container: Registering getNewsUseCase');
-      this.dependencies.set('resetPasswordUseCase', new ResetPasswordUseCase(userRepository, storageService)); // New
-      console.log('Container: Registering getWeatherUseCase');
-      this.dependencies.set('getNewsUseCase', new GetNewsUseCase(newsRepository, asyncStorageNewsRepository));
-      console.log('Container: Registering getDashboardDataUseCase');
-      this.dependencies.set('getDashboardDataUseCase', new GetDashboardDataUseCase(dashboardRepository, asyncStorageFarmerRepository));
-      console.log('Container: Registering getAvailableLanguagesUseCase');
-      this.dependencies.set('getAvailableLanguagesUseCase', new GetAvailableLanguagesUseCase(languageRepository));
-      console.log('Container: Registering selectLanguageUseCase');
-      this.dependencies.set('selectLanguageUseCase', new SelectLanguageUseCase(languageRepository));
-      console.log('Container: Registering getSelectedLanguageUseCase');
-      this.dependencies.set('getSelectedLanguageUseCase', new GetSelectedLanguageUseCase(languageRepository));
-      console.log('Container: Registering languageSelectionPresenter');
-      this.dependencies.set('languageSelectionPresenter', new LanguageSelectionPresenter(
-        this.dependencies.get('getAvailableLanguagesUseCase'),
-        this.dependencies.get('selectLanguageUseCase'),
-        this.dependencies.get('getSelectedLanguageUseCase')
-      ));
+    // Language Use Cases
+    console.log('Container: Registering language use cases');
+    this.registerLanguageUseCases(languageRepository);
 
-      console.log('Container: Register complete');
-    } catch (error) {
-      console.error('Container: Register failed:', error);
-      throw error;
-    }
+    console.log('Container: All use cases registered');
+  }
+
+  registerUserUseCases(userRepo, socialAuthRepo, storageService, validationService) {
+    console.log('Container: Registering user use cases');
+    const userUseCases = {
+      registerUserUseCase: new RegisterUserUseCase(userRepo, storageService),
+      verifyEmailUseCase: new VerifyEmailUseCase(userRepo, storageService),
+      loginUserUseCase: new LoginUserUseCase(userRepo, validationService, storageService),
+      socialRegisterUseCase: new SocialRegisterUseCase(socialAuthRepo, storageService),
+      socialLoginUseCase: new SocialLoginUseCase(socialAuthRepo, storageService),
+      resetPasswordUseCase: new ResetPasswordUseCase(userRepo, storageService),
+      forgotPasswordUseCase: new ForgotPasswordUseCase(userRepo),
+    };
+
+    Object.entries(userUseCases).forEach(([key, useCase]) => {
+      this.dependencies.set(key, useCase);
+      console.log(`Container: Registered ${key}`);
+    });
+  }
+
+  registerLanguageUseCases(languageRepo) {
+    console.log('Container: Registering language use cases');
+    const getLanguages = new GetAvailableLanguagesUseCase(languageRepo);
+    const selectLanguage = new SelectLanguageUseCase(languageRepo);
+    const getSelectedLanguage = new GetSelectedLanguageUseCase(languageRepo);
+
+    this.dependencies.set('getAvailableLanguagesUseCase', getLanguages);
+    this.dependencies.set('selectLanguageUseCase', selectLanguage);
+    this.dependencies.set('getSelectedLanguageUseCase', getSelectedLanguage);
+    console.log('Container: Registering languageSelectionPresenter');
+    this.dependencies.set('languageSelectionPresenter', 
+      new LanguageSelectionPresenter(getLanguages, selectLanguage, getSelectedLanguage));
+    console.log('Container: Registered language use cases');
+  }
+
+  getAllDependencies() {
+    console.log('Container: Getting all dependencies');
+    return {
+      userRepository: this.dependencies.get('userRepository'),
+      socialAuthRepository: this.dependencies.get('socialAuthRepository'),
+      farmerRepository: this.dependencies.get('farmerRepository'),
+      asyncFarmerRepository: this.dependencies.get('asyncFarmerRepository'),
+      weatherRepository: this.dependencies.get('weatherRepository'),
+      asyncWeatherRepository: this.dependencies.get('asyncWeatherRepository'),
+      newsRepository: this.dependencies.get('newsRepository'),
+      asyncNewsRepository: this.dependencies.get('asyncNewsRepository'),
+      dashboardRepository: this.dependencies.get('dashboardRepository'),
+      languageRepository: this.dependencies.get('languageRepository'),
+      storageService: this.dependencies.get('storageService'),
+      validationService: this.dependencies.get('validationService'),
+    };
   }
 
   get(key) {
     if (!this.isInitialized) {
-      console.error(`Container: Attempted to get ${key} before initialization`);
+      console.error('Container: Attempted to get dependency before initialization:', key);
       throw new Error('Container not initialized. Call initialize() first.');
     }
     if (!this.dependencies.has(key)) {
-      console.error(`Container: Dependency ${key} not found`);
-      throw new Error(`Dependency ${key} not found`);
+      console.error('Container: Dependency not found:', key, 'Available:', Array.from(this.dependencies.keys()));
+      throw new Error(`Dependency ${key} not found. Available: ${Array.from(this.dependencies.keys()).join(', ')}`);
     }
+    console.log('Container: Getting dependency:', key);
     return this.dependencies.get(key);
   }
 }
 
+// Singleton instance
 const containerInstance = new Container();
 export default containerInstance;

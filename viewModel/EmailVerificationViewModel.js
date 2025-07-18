@@ -1,82 +1,73 @@
 export class EmailVerificationViewModel {
   constructor(registerUserUseCase) {
+    if (!registerUserUseCase?.verifyEmail) {
+      throw new Error('Invalid registerUserUseCase provided');
+    }
     this.registerUserUseCase = registerUserUseCase;
   }
 
   async verifyEmail(token) {
     try {
-      console.log('EmailVerificationViewModel.verifyEmail called with:', token);
+      console.log('Starting email verification with token:', token);
       const result = await this.registerUserUseCase.verifyEmail(token);
-      console.log('EmailVerificationViewModel.verifyEmail result:', result);
+      
       if (!result.success) {
+        console.warn('Verification failed:', result.error);
         return {
           success: false,
-          error: result.error || 'Verification failed.',
+          error: result.error || 'Verification failed',
+          shouldRetry: !result.error?.includes('expired')
         };
       }
+
+      console.log('Verification successful:', result.user);
       return {
         success: true,
         user: {
-          id: result.userId,
-          email: result.email,
-          token: result.token,
+          id: result.user._id || result.user.userId,
+          email: result.user.email,
+          token: result.user.token,
+          firstName: result.user.firstName,
+          lastName: result.user.lastName,
+          phoneNumber: result.user.phone || result.user.phoneNumber
         },
-        message: result.message,
+        message: result.message
       };
     } catch (error) {
-      console.error('EmailVerificationViewModel.verifyEmail error:', {
-        message: error.message,
-        stack: error.stack,
-        response: error.response?.data,
-        status: error.response?.status,
-      });
+      console.error('Verification error:', error);
       return {
         success: false,
-        error: error.message.includes('400')
-          ? 'Invalid verification token.'
-          : error.message.includes('401')
-          ? 'Invalid or expired token.'
-          : error.message.includes('502')
-          ? 'Server error. Please try again later.'
-          : error.message || 'Verification failed.',
+        error: this._normalizeError(error),
+        shouldRetry: true
       };
     }
   }
 
+  _normalizeError(error) {
+    const message = error.message || 'Verification failed';
+    
+    if (message.includes('storage')) {
+      return 'Temporary storage issue. Your account was created but we couldn\'t save session data. Please login.';
+    }
+    if (message.includes('400')) return 'Invalid verification token';
+    if (message.includes('401')) return 'Expired verification link';
+    if (message.includes('409')) return 'Email already registered';
+    return message;
+  }
+
   async resendVerification(email) {
     try {
-      console.log('EmailVerificationViewModel.resendVerification called with:', email);
       const result = await this.registerUserUseCase.resendVerification(email);
-      console.log('EmailVerificationViewModel.resendVerification result:', result);
-      if (!result.success) {
-        return {
-          success: false,
-          error: result.error || 'Failed to resend verification email.',
-        };
-      }
       return {
-        success: true,
+        success: result.success,
         message: result.message,
         token: result.token,
+        error: result.error
       };
     } catch (error) {
-      console.error('EmailVerificationViewModel.resendVerification error:', {
-        message: error.message,
-        stack: error.stack,
-        response: error.response?.data,
-        status: error.response?.status,
-      });
       return {
         success: false,
-        error: error.message.includes('404')
-          ? 'No pending registration found.'
-          : error.message.includes('429')
-          ? 'Too many requests. Please try again after 30 minutes.'
-          : error.message.includes('502')
-          ? 'Server error. Please try again later.'
-          : error.message.includes('network') || error.message.includes('timeout')
-          ? 'Network error. Please check your connection.'
-          : error.message || 'Failed to resend verification email.',
+        error: this._normalizeError(error)
       };
     }
   }

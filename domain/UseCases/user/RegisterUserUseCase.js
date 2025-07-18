@@ -55,7 +55,8 @@ export class RegisterUserUseCase {
    * @param {string} token - Verification token
    * @returns {Promise<object>} - {success: boolean, userId?: string, email?: string, token?: string, message?: string, error?: string}
    */
-  async verifyEmail(token) {
+  // In RegisterUserUseCase.js
+async verifyEmail(token) {
   try {
     console.log('RegisterUserUseCase.verifyEmail called with:', token);
     const response = await this.userRepository.verifyEmail(token);
@@ -65,31 +66,29 @@ export class RegisterUserUseCase {
       throw new Error('No token received in verification response');
     }
 
-    // Changed from setItem to storeItem to match StorageService
-    await this.storageService.storeItem('jwtToken', response.token);
+    // Store with namespaced key
+    await this.storageService.storeItem('zao_jwtToken', response.token);
     
     return {
       success: true,
-      userId: response.userId,
-      email: response.email,
-      token: response.token,
+      user: { // Return full user object to match your flow
+        id: response._id,
+        firstName: response.firstName,
+        lastName: response.lastName,
+        email: response.email,
+        phoneNumber: response.phone,
+        token: response.token
+      },
       message: response.message,
     };
-    } catch (error) {
-      console.error('RegisterUserUseCase.verifyEmail error:', {
-        message: error.message,
-        stack: error.stack,
-        response: error.response?.data,
-        status: error.response?.status,
-      });
-
-      return {
-        success: false,
-        error: this._handleError(error),
-      };
-    }
+  } catch (error) {
+    console.error('RegisterUserUseCase.verifyEmail error:', error);
+    return {
+      success: false,
+      error: this._handleError(error),
+    };
   }
-
+}
   /**
    * Resends verification email
    * @param {string} email - User email address
