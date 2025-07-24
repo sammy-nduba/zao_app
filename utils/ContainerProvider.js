@@ -1,3 +1,4 @@
+// utils/ContainerProvider.js
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import container from '../infrastructure/di/Container';
@@ -44,16 +45,17 @@ export const ContainerProvider = ({ children }) => {
   }
 
   return (
-    <ContainerContext.Provider value={container}>
+    <ContainerContext.Provider value={{ container, isReady }}>
       {children}
     </ContainerContext.Provider>
   );
 };
 
 export const useContainer = () => {
-  const container = useContext(ContainerContext);
-  if (!container) {
+  const context = useContext(ContainerContext);
+  if (!context) {
     throw new Error('useContainer must be used within a ContainerProvider');
   }
-  return container;
+  console.log('useContainer: Providing container, isReady:', context.isReady);
+  return context;
 };

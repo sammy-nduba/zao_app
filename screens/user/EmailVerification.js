@@ -1,15 +1,14 @@
-import React, { useState, useEffect, useContext, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, StyleSheet, ActivityIndicator, Linking, Image } from 'react-native';
 import { ScrollableMainContainer } from '../../components';
 import StyledText from '../../components/Texts/StyledText';
 import StyledButton from '../../components/Buttons/StyledButton';
 import { colors } from '../../config/theme';
-import { AuthContext } from '../../utils/AuthContext';
+import { useAuth } from '../../utils/AuthContext';
+import { useContainer } from '../../utils/ContainerProvider';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import container from '../../infrastructure/di/Container';
 import { EmailVerificationViewModel } from '../../viewModel/EmailVerificationViewModel';
 
 const decodeToken = (token) => {
@@ -25,22 +24,21 @@ const decodeToken = (token) => {
 };
 
 const EmailVerification = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isVerified, setLocalIsVerified] = useState(false);
-  const [token, setToken] = useState(null);
-  const [email, setEmail] = useState(null);
-  const { user, setUser, setIsVerified, setIsLoggedIn } = useContext(AuthContext);
+  const { authState, setUser, setIsVerified, setIsLoggedIn, setIsRegistrationComplete } = useAuth();
+  const { container, isReady } = useContainer();
   const navigation = useNavigation();
   const route = useRoute();
+  const [isLoading, setIsLoading] = useState(false);
 
   const viewModel = useMemo(() => {
+    if (!isReady) {
+      console.log('EmailVerification: Container not ready yet');
+      return null;
+    }
     try {
-      if (!container.isInitialized) {
-        throw new Error('Container not initialized');
-      }
       return new EmailVerificationViewModel(container.get('registerUserUseCase'));
     } catch (error) {
-      console.error('Failed to initialize ViewModel:', error);
+      console.error('EmailVerification: Failed to initialize ViewModel:', error);
       Toast.show({
         type: 'error',
         text1: 'Initialization Error',
@@ -48,47 +46,23 @@ const EmailVerification = () => {
       });
       return null;
     }
-  }, []);
-
-  useEffect(() => {
-    const loadPersistedState = async () => {
-      try {
-        const storedUser = await AsyncStorage.getItem('zao_user');
-        if (storedUser) {
-          const parsedUser = JSON.parse(storedUser);
-          if (parsedUser.isVerified) {
-            setUser(parsedUser);
-            setIsVerified(true);
-            setIsLoggedIn(true);
-            setLocalIsVerified(true);
-            console.log('Restored verified user from AsyncStorage:', parsedUser);
-            navigation.replace('FarmDetails');
-          }
-        }
-      } catch (error) {
-        console.error('Failed to load persisted user state:', error);
-      }
-    };
-    loadPersistedState();
-  }, [navigation, setUser, setIsVerified, setIsLoggedIn]);
+  }, [container, isReady]);
 
   useEffect(() => {
     const handleDeepLink = async ({ url }) => {
-      console.log('Deep link received:', url);
-      if (!url || url.includes('exp+zao://')) return; // Ignore Expo links
+      console.log('EmailVerification: Deep link received:', url);
+      if (!url || url.includes('exp+zao://')) return;
 
       try {
         const urlObj = new URL(url);
-        const tokenFromUrl = urlObj.searchParams.get('token');
-        const emailFromUrl = urlObj.searchParams.get('email');
-        console.log('Extracted from deep link:', { token: tokenFromUrl, email: emailFromUrl });
+        const token = urlObj.searchParams.get('token');
+        const email = urlObj.searchParams.get('email');
+        console.log('EmailVerification: Extracted from deep link:', { token, email });
 
-        if (tokenFromUrl && emailFromUrl) {
-          setEmail(emailFromUrl);
-          setToken(tokenFromUrl);
-          await handleVerify(tokenFromUrl, emailFromUrl);
+        if (token && email) {
+          await handleVerify(token, email);
         } else {
-          console.error('Missing token or email in deep link:', url);
+          console.error('EmailVerification: Missing token or email in deep link:', url);
           Toast.show({
             type: 'error',
             text1: 'Invalid Link',
@@ -96,7 +70,7 @@ const EmailVerification = () => {
           });
         }
       } catch (error) {
-        console.error('Deep link handling error:', error);
+        console.error('EmailVerification: Deep link handling error:', error);
         Toast.show({
           type: 'error',
           text1: 'Invalid Link',
@@ -108,10 +82,10 @@ const EmailVerification = () => {
     Linking.addEventListener('url', handleDeepLink);
     Linking.getInitialURL().then((url) => url && handleDeepLink({ url }));
 
+    // Handle route params
     if (route.params?.token && route.params?.email) {
-      console.log('Route params received:', route.params);
-      setToken(route.params.token);
-      setEmail(route.params.email);
+      console.log('EmailVerification: Route params received:', route.params);
+      handleVerify(route.params.token, route.params.email);
     }
 
     return () => Linking.removeAllListeners('url');
@@ -119,7 +93,7 @@ const EmailVerification = () => {
 
   const handleVerify = async (verificationToken, verificationEmail) => {
     if (!viewModel || !verificationToken || !verificationEmail) {
-      console.error('Missing viewModel, token, or email');
+      console.error('EmailVerification: Missing viewModel, token, or email');
       Toast.show({
         type: 'error',
         text1: 'Verification Failed',
@@ -131,9 +105,9 @@ const EmailVerification = () => {
     setIsLoading(true);
     try {
       const result = await viewModel.verifyEmail(verificationToken);
-      console.log('Verify email response:', result);
+      console.log('EmailVerification: Verify email response:', result);
 
-      if (!result.success && !result.token) {
+      if (!result.success || !result.token) {
         throw new Error(result.message || 'Verification failed');
       }
 
@@ -157,7 +131,7 @@ const EmailVerification = () => {
       }
 
       const decoded = decodeToken(userData.token);
-      console.log('Decoded token:', decoded);
+      console.log('EmailVerification: Decoded token:', decoded);
 
       const updatedUser = {
         id: userData.id || decoded._id || '',
@@ -169,19 +143,16 @@ const EmailVerification = () => {
         isVerified: true,
       };
 
-      console.log('Final user object:', updatedUser);
+      console.log('EmailVerification: Final user object:', updatedUser);
 
-      await AsyncStorage.multiSet([
-        ['zao_jwtToken', userData.token],
-        ['zao_user', JSON.stringify(updatedUser)],
-      ]);
-      setUser(updatedUser);
-      setIsVerified(true);
-      setIsLoggedIn(true);
-      setLocalIsVerified(true);
+      await setUser(updatedUser);
+      await setIsVerified(true);
+      await setIsLoggedIn(true);
 
-      console.log('Verification successful, navigating to FarmDetails');
-      navigation.replace('FarmDetails');
+      // Navigate based on registration status
+      const targetScreen = authState.isRegistrationComplete ? 'MainTabs' : 'FarmDetails';
+      console.log(`EmailVerification: Verification successful, navigating to ${targetScreen}`);
+      navigation.replace(targetScreen);
 
       Toast.show({
         type: 'success',
@@ -189,20 +160,21 @@ const EmailVerification = () => {
         text2: message,
       });
     } catch (error) {
-      console.error('Verification failed:', error);
+      console.error('EmailVerification: Verification failed:', error);
       Toast.show({
         type: 'error',
         text1: 'Verification Error',
         text2: error.message,
       });
+      navigation.navigate('Error', { error: error.message });
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleResendVerification = async () => {
-    if (!viewModel || !email) {
-      console.error('Missing viewModel or email');
+    if (!viewModel || !authState.user?.email) {
+      console.error('EmailVerification: Missing viewModel or email');
       Toast.show({
         type: 'error',
         text1: 'Error',
@@ -213,10 +185,9 @@ const EmailVerification = () => {
 
     setIsLoading(true);
     try {
-      const result = await viewModel.resendVerification(email);
-      console.log('Resend verification result:', result);
+      const result = await viewModel.resendVerification(authState.user.email);
+      console.log('EmailVerification: Resend verification result:', result);
       if (result.success) {
-        setToken(result.token);
         Toast.show({
           type: 'success',
           text1: 'Email Resent',
@@ -226,7 +197,7 @@ const EmailVerification = () => {
         throw new Error(result.error || 'Failed to resend email');
       }
     } catch (error) {
-      console.error('Resend verification error:', error);
+      console.error('EmailVerification: Resend verification error:', error);
       Toast.show({
         type: 'error',
         text1: 'Error',
@@ -238,8 +209,8 @@ const EmailVerification = () => {
   };
 
   const handleCheckVerification = async () => {
-    if (!viewModel || !email) {
-      console.error('Missing viewModel or email');
+    if (!viewModel || !authState.user?.email) {
+      console.error('EmailVerification: Missing viewModel or email');
       Toast.show({
         type: 'error',
         text1: 'Error',
@@ -250,10 +221,14 @@ const EmailVerification = () => {
 
     setIsLoading(true);
     try {
-      const response = await viewModel.checkVerificationStatus(email);
-      console.log('Check verification status result:', response);
+      const response = await viewModel.checkVerificationStatus(authState.user.email);
+      console.log('EmailVerification: Check verification status result:', response);
       if (response.isVerified) {
-        await handleVerify(response.token || token, email);
+        await setIsVerified(true);
+        await setIsLoggedIn(true);
+        const targetScreen = authState.isRegistrationComplete ? 'MainTabs' : 'FarmDetails';
+        console.log(`EmailVerification: Check verification successful, navigating to ${targetScreen}`);
+        navigation.replace(targetScreen);
       } else {
         Toast.show({
           type: 'error',
@@ -262,7 +237,7 @@ const EmailVerification = () => {
         });
       }
     } catch (error) {
-      console.error('Check verification error:', error);
+      console.error('EmailVerification: Check verification error:', error);
       Toast.show({
         type: 'error',
         text1: 'Check Failed',
@@ -273,20 +248,7 @@ const EmailVerification = () => {
     }
   };
 
-  const handleContinueToFarmDetails = () => {
-    if (isVerified) {
-      console.log('Continue button pressed, navigating to FarmDetails');
-      navigation.replace('FarmDetails');
-    } else {
-      Toast.show({
-        type: 'error',
-        text1: 'Not Verified',
-        text2: 'Please verify your email first',
-      });
-    }
-  };
-
-  if (!viewModel) {
+  if (!viewModel || !isReady) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary[600]} />
@@ -306,34 +268,34 @@ const EmailVerification = () => {
 
       <View style={styles.content}>
         <MaterialCommunityIcons
-          name={isVerified ? 'check-circle' : 'email'}
+          name={authState.isVerified ? 'check-circle' : 'email'}
           size={72}
-          color={isVerified ? colors.primary[600] : colors.grey[500]}
+          color={authState.isVerified ? colors.primary[600] : colors.grey[500]}
         />
         <StyledText style={styles.title}>
-          {isVerified ? 'Email Verified!' : 'Verify Your Email'}
+          {authState.isVerified ? 'Email Verified!' : 'Verify Your Email'}
         </StyledText>
         <StyledText style={styles.subtitle}>
-          {isVerified
+          {authState.isVerified
             ? 'Your email has been successfully verified'
-            : `We've sent a verification link to ${email || 'your email'}`}
+            : `We've sent a verification link to ${authState.user?.email || 'your email'}`}
         </StyledText>
         {isLoading && <ActivityIndicator size="large" color={colors.primary[600]} />}
       </View>
 
       <View style={styles.buttonContainer}>
-        {!isVerified ? (
+        {!authState.isVerified ? (
           <>
             <StyledButton
               title="Resend Verification Email"
               onPress={handleResendVerification}
-              disabled={isLoading}
+              disabled={isLoading || !authState.user?.email}
               style={styles.primaryButton}
             />
             <StyledButton
               title="Check Verification Status"
               onPress={handleCheckVerification}
-              disabled={isLoading || !email}
+              disabled={isLoading || !authState.user?.email}
               style={styles.checkButton}
             />
             <StyledButton
@@ -345,8 +307,13 @@ const EmailVerification = () => {
           </>
         ) : (
           <StyledButton
-            title="Continue to Farm Details"
-            onPress={handleContinueToFarmDetails}
+            title="Continue"
+            onPress={() => {
+              const targetScreen = authState.isRegistrationComplete ? 'MainTabs' : 'FarmDetails';
+              console.log(`EmailVerification: Continue button pressed, navigating to ${targetScreen}`);
+              navigation.replace(targetScreen);
+            }}
+            disabled={isLoading}
             style={styles.primaryButton}
           />
         )}

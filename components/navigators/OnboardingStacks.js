@@ -1,18 +1,17 @@
-import React, { useContext, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import { StyledButton } from '../../components';
-import Welcome from '../../screens/Welcome';
-import LanguageSelectionScreen from '../../screens/LanguageSelectionScreen';
-import { AuthContext } from '../../utils/AuthContext';
-import { colors } from '../../config/theme';
-import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../utils/AuthContext';
 import { useContainer } from '../../utils/ContainerProvider';
 
+// Components
+import Welcome from '../../screens/Welcome';
+import LanguageSelectionScreen from '../../screens/LanguageSelectionScreen';
+import SkipButton from '../Buttons/StyledButton';
 
 const Stack = createStackNavigator();
 
-const LanguageSelectionScreenWrapper = (props) => {
-  const container = useContainer();
+const LanguageSelectionScreenWrapper = React.memo((props) => {
+  const { container } = useContainer();
   const presenter = container.get('languageSelectionPresenter');
   
   return (
@@ -21,72 +20,43 @@ const LanguageSelectionScreenWrapper = (props) => {
       navigation={props.navigation}
     />
   );
-};
+});
 
 const OnboardingStack = () => {
-  const { t } = useTranslation();
-  const { setIsZaoAppOnboarded } = useContext(AuthContext);
+  const { setIsZaoAppOnboarded } = useAuth();
   const [completingOnboarding, setCompletingOnboarding] = useState(false);
 
-  const completeOnboarding = async (navigation) => {
+  const completeOnboarding = useCallback(async () => {
     try {
       setCompletingOnboarding(true);
       await setIsZaoAppOnboarded(true);
-      navigation.replace('Auth');
     } catch (error) {
-      console.warn('Error completing onboarding:', error);
+      console.error('Error completing onboarding:', error);
     } finally {
       setCompletingOnboarding(false);
     }
-  };
+  }, [setIsZaoAppOnboarded]);
 
   return (
     <Stack.Navigator
-      screenOptions={{
-        cardStyleInterpolator: ({ current, layouts }) => ({
-          cardStyle: {
-            transform: [
-              {
-                translateX: current.progress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [layouts.screen.width, 0],
-                }),
-              },
-            ],
-          },
-        }),
-        headerShown: false,
-      }}
+      initialRouteName="LanguageSelection"
+      screenOptions={{ headerShown: false }}
     >
       <Stack.Screen
         name="LanguageSelection"
         component={LanguageSelectionScreenWrapper}
-        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="Welcome"
         component={Welcome}
-        options={({ navigation }) => ({
+        options={{
           headerRight: () => (
-            <StyledButton
-              onPress={() => completeOnboarding(navigation)}
+            <SkipButton 
+              onPress={completeOnboarding}
               isLoading={completingOnboarding}
-              style={{
-                width: 'auto',
-                height: 'auto',
-                padding: 10,
-                backgroundColor: 'transparent',
-              }}
-              textStyle={{
-                color: colors.grey[600],
-                fontSize: 14,
-                fontWeight: '500',
-              }}
-            >
-              {t('common.skip')}
-            </StyledButton>
+            />
           ),
-        })}
+        }}
       />
     </Stack.Navigator>
   );

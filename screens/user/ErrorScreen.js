@@ -5,22 +5,27 @@ import StyledText from '../../components/Texts/StyledText';
 import { colors } from '../../config/theme';
 
 const ErrorScreen = ({ navigation, route }) => {
-  // Get error from route params or use default
+  // Get authState from route params instead of context
+  const authState = route?.params?.authState || {};
   const error = route?.params?.error || 'An unexpected error occurred';
-  
-  // Proper reload function for React Native
+
   const handleReload = () => {
-    // Option 1: Reset navigation to initial route
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'InitialRoute' }], // Replace with your initial route name
-    });
-
-    // Option 2: If using context/state to track errors, reset the error state
-    // resetErrorState(); // You would need to implement this
-
-    // Option 3: If the error is recoverable, navigate back
-    // navigation.goBack();
+    if (authState?.user?.id && authState.isVerified && !authState.isRegistrationComplete) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'FarmDetails' }],
+      });
+    } else if (authState?.isZaoAppOnboarded === false) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Onboarding' }],
+      });
+    } else {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Auth' }],
+      });
+    }
   };
 
   return (

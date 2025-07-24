@@ -1,3 +1,4 @@
+// screens/ExperiencedFarmerForm.js
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import StyledButton from '../../../components/Buttons/StyledButton';
@@ -146,7 +147,6 @@ const ExperiencedFarmerForm = ({ formData, onFormChange, onSubmit, isLoading }) 
             <MaterialCommunityIcons name="calendar" size={24} color={colors.grey[600]} />
           </TouchableOpacity>
         </View>
-        
         {showDatePicker && (
           <DateTimePicker
             value={selectedDate}
@@ -203,6 +203,7 @@ const ExperiencedFarmerForm = ({ formData, onFormChange, onSubmit, isLoading }) 
   );
 };
 
+// Styles remain the same as provided
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,

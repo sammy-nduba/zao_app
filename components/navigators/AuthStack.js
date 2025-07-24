@@ -8,6 +8,7 @@ import {
   NewFarmerForm,
   ExperiencedFarmerForm
 } from '../../screens';
+
 import EmailVerification  from '../../screens/user/EmailVerification';
 import { createStackNavigator } from '@react-navigation/stack';
 

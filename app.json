@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.nduba.zao",
+      "bundleIdentifier": "com.zao.zaoApp",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }

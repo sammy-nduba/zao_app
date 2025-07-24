@@ -11,7 +11,7 @@ export class AuthViewModel {
       isLoggedIn: false,
       isRegistered: false,
       user: null,
-      isLoading: false,
+      isLoading: true,
       authError: null,
       isVerified: false,
       isRegistrationComplete: false,

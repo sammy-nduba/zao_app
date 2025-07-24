@@ -1,4 +1,4 @@
-package com.nduba.zao
+package com.zao
 
 import android.app.Application
 import android.content.res.Configuration
