@@ -63,6 +63,7 @@ const ExperiencedFarmerForm = ({ formData, onFormChange, onSubmit, isLoading }) 
   };
 
   return (
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
     <ScrollableMainContainer contentContainerStyle={styles.container}>
       <View style={styles.section}>
         <StyledText style={styles.sectionTitle}>
@@ -200,6 +201,7 @@ const ExperiencedFarmerForm = ({ formData, onFormChange, onSubmit, isLoading }) 
         loading={isLoading}
       />
     </ScrollableMainContainer>
+  </KeyboardAvoidingView>
   );
 };
 

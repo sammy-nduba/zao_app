@@ -1,6 +1,6 @@
 // screens/NewFarmerForm.js
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Platform, KeyboardAvoidingView } from 'react-native';
 import StyledButton from '../../../components/Buttons/StyledButton';
 import ScrollableMainContainer from '../../../components/container/ScrollableMainContainer';
 import CropSelection from '../../../components/farmDetailComponents/CropSelection';
@@ -60,6 +60,7 @@ const NewFarmerForm = ({ formData, onFormChange, onSubmit, isLoading }) => {
   };
 
   return (
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
     <ScrollableMainContainer contentContainerStyle={styles.container}>
       <View style={styles.section}>
         <StyledText style={styles.sectionTitle}>
@@ -163,6 +164,7 @@ const NewFarmerForm = ({ formData, onFormChange, onSubmit, isLoading }) => {
         loading={isLoading}
       />
     </ScrollableMainContainer>
+    </KeyboardAvoidingView>
   );
 };
 

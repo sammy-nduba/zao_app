@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.zao.zaoApp",
+      "bundleIdentifier": "com.zaoapp.zao",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -26,7 +26,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.nduba.zao"
+      "package": "com.zaoapp.zao"
     },
     "web": {
       "favicon": "./assets/favicon.png"
